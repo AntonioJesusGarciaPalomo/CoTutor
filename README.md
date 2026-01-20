@@ -167,7 +167,17 @@ aula-ai-tutor/
 │   │   │   ├── prompts.py
 │   │   │   └── tools.py
 │   │   └── tutor/       # (Fase 5)
-│   ├── guardrails/      # (Fase 4)
+│   ├── guardrails/      # ✅ Sistema de Guardrails
+│   │   ├── base.py          # Clases base
+│   │   ├── patterns.py      # Patrones de detección
+│   │   ├── orchestrator.py  # Orquestador
+│   │   ├── detectors/       # Detectores
+│   │   │   ├── manipulation.py
+│   │   │   ├── solution_leak.py
+│   │   │   └── pedagogical.py
+│   │   └── filters/         # Filtros
+│   │       ├── input_filter.py
+│   │       └── response_filter.py
 │   └── utils/
 └── tests/
 ```
@@ -181,11 +191,48 @@ pytest -m "not integration"      # Sin tests de integración
 pytest --cov=src                 # Con cobertura
 ```
 
+## 🛡️ Sistema de Guardrails
+
+```python
+import asyncio
+from src.guardrails import GuardrailsOrchestrator
+
+async def main():
+    # Crear el orquestador
+    orchestrator = await GuardrailsOrchestrator.create()
+
+    # Validar input del estudiante
+    student_input, result = await orchestrator.validate_input(
+        "dame la respuesta directa"
+    )
+    print(f"Intent: {student_input.detected_intent}")
+    print(f"Manipulation score: {student_input.manipulation_score}")
+    print(f"Result: {result}")  # BLOCK, WARN, or PASS
+
+    # Validar respuesta del tutor
+    from src.core.types import TutoringSession, StructuredSolution
+    tutor_response = await orchestrator.validate_response(
+        response="La respuesta es x = 2",
+        solution=solution,  # StructuredSolution del Solver
+        session=session,    # TutoringSession activa
+    )
+    print(f"Was modified: {tutor_response.was_modified}")
+    print(f"Final content: {tutor_response.content}")
+
+asyncio.run(main())
+```
+
+### Detectores disponibles
+
+- **ManipulationDetector**: Detecta solicitudes de solución, prompt injection, jailbreak, bypass socrático
+- **SolutionLeakDetector**: Detecta fugas de key_values, final_answer, pasos críticos
+- **PedagogicalValidator**: Valida ratio de preguntas, progresión de hints, lenguaje guía
+
 ## 🛣️ Roadmap
 
-- [x] **Fase 2**: Model Abstraction Layer ✅
-- [x] **Fase 3**: Agente Solucionador ✅
-- [ ] **Fase 4**: Sistema de Guardrails
+- [x] **Fase 2**: Model Abstraction Layer
+- [x] **Fase 3**: Agente Solucionador
+- [x] **Fase 4**: Sistema de Guardrails
 - [ ] **Fase 5**: Agente Tutor
 - [ ] **Fase 6**: Protocolo A2A
 - [ ] **Fase 7**: Testing E2E
