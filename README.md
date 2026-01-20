@@ -143,6 +143,20 @@ is_valid, diff = validator.verify_equation_solution(
 # (True, 0.0)
 ```
 
+## 🌐 Protocolo A2A (Agent-to-Agent)
+
+El sistema incluye una API REST completa para la interacción entre agentes y clientes externos.
+
+        
+        # 3. Chat con el tutor
+        response = await client.send_message(
+            session_id=session_id,
+            message="¿Cómo empiezo?"
+        )
+        print(response.content)
+```
+```
+
 ## 🏗️ Estructura del Proyecto
 
 ```
@@ -178,6 +192,13 @@ aula-ai-tutor/
 │   │   └── filters/         # Filtros
 │   │       ├── input_filter.py
 │   │       └── response_filter.py
+│   ├── services/        # ✅ API REST (Fase 6)
+│   │   ├── routers/
+│   │   │   ├── solver.py
+│   │   │   └── tutor.py
+│   │   └── app.py
+│   ├── a2a/             # ✅ Cliente A2A
+│   │   └── client.py
 │   └── utils/
 └── tests/
 ```
@@ -233,8 +254,8 @@ asyncio.run(main())
 - [x] **Fase 2**: Model Abstraction Layer
 - [x] **Fase 3**: Agente Solucionador
 - [x] **Fase 4**: Sistema de Guardrails
-- [ ] **Fase 5**: Agente Tutor
-- [ ] **Fase 6**: Protocolo A2A
+- [x] **Fase 5**: Agente Tutor
+- [x] **Fase 6**: Protocolo A2A
 - [ ] **Fase 7**: Testing E2E
 - [ ] **Fase 8**: UI
 

@@ -53,7 +53,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = mock_openai_response
             mock_response.raise_for_status = MagicMock()
@@ -64,10 +64,10 @@ class TestOpenAILocalAdapter:
             response = await adapter.generate(sample_messages)
             
             assert isinstance(response, ModelResponse)
-            assert response.content == "La respuesta es 4."
+            assert response.content == "Esta es una respuesta de prueba."
             assert response.model == "openai_local/llama-3.1-8b"
-            assert response.prompt_tokens == 10
-            assert response.completion_tokens == 5
+            assert response.prompt_tokens == 50
+            assert response.completion_tokens == 25
             assert response.finish_reason == "stop"
     
     @pytest.mark.asyncio
@@ -78,7 +78,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = mock_openai_response
             mock_response.raise_for_status = MagicMock()
@@ -114,7 +114,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 404
             
             mock_client.post.return_value = mock_response
@@ -132,7 +132,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 400
             mock_response.json.return_value = {
                 "error": {"message": "Invalid request"}
@@ -155,7 +155,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {"choices": []}
             mock_response.raise_for_status = MagicMock()
@@ -211,7 +211,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {"data": []}
             
@@ -231,12 +231,12 @@ class TestOpenAILocalAdapter:
             mock_client.is_closed = False
             
             # GET /models devuelve 404
-            mock_get_response = AsyncMock()
+            mock_get_response = MagicMock()
             mock_get_response.status_code = 404
             mock_client.get.return_value = mock_get_response
             
             # POST /chat/completions funciona
-            mock_post_response = AsyncMock()
+            mock_post_response = MagicMock()
             mock_post_response.status_code = 200
             mock_client.post.return_value = mock_post_response
             
@@ -260,7 +260,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = models_response
             mock_response.raise_for_status = MagicMock()
@@ -289,7 +289,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = embed_response
             mock_response.raise_for_status = MagicMock()
@@ -315,7 +315,7 @@ class TestOpenAILocalAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "data": [
@@ -361,7 +361,7 @@ class TestOpenAILocalEmbeddingAdapter:
             mock_client_class.return_value = mock_client
             mock_client.is_closed = False
             
-            mock_response = AsyncMock()
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = embed_response
             mock_response.raise_for_status = MagicMock()

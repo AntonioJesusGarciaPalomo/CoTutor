@@ -1,0 +1,244 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.11, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\angarcia\CoTutor\venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\angarcia\CoTutor
+configfile: pyproject.toml
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/e2e/test_full_lifecycle.py::TestFullLifecycle::test_solve_and_tutor_flow FAILED [100%]
+
+================================== FAILURES ===================================
+_________________ TestFullLifecycle.test_solve_and_tutor_flow _________________
+
+self = <tests.e2e.test_full_lifecycle.TestFullLifecycle object at 0x0000028B2E679590>
+mocker = <pytest_mock.plugin.MockerFixture object at 0x0000028B2E6BC830>
+
+    def test_solve_and_tutor_flow(self, mocker):
+        """
+        Simula un flujo completo:
+        1. Resolver un problema.
+        2. Iniciar sesi¾n de tutorÝa con la soluci¾n.
+        3. Interactuar con el tutor.
+        """
+        # ---------------------------------------------------------------------
+        # 1. Mockear respuestas de los agentes para test determinista
+        # ---------------------------------------------------------------------
+        # Solver
+        mock_solve = mocker.patch("src.agents.solver.SolverAgent.solve")
+        mock_solve.return_value.final_answer = "x = 4"
+        mock_solve.return_value.problem_type = ProblemType.MATHEMATICS
+        mock_solve.return_value.difficulty = DifficultyLevel.BASIC
+        mock_solve.return_value.steps = []
+        mock_solve.return_value.hints = []
+        mock_solve.return_value.model_dump.return_value = {
+            "final_answer": "x = 4",
+            "problem_type": "mathematics",
+            "difficulty": "basic",
+            "steps": [],
+            "hints": [],
+        }
+    
+        # Tutor
+        mock_start = mocker.patch("src.agents.tutor.TutorAgent.start_session")
+        mock_session_obj = mocker.Mock()
+        mock_session_obj.session_id = "12345678-1234-5678-1234-567812345678"
+        mock_start.return_value = mock_session_obj
+    
+        mock_respond = mocker.patch("src.agents.tutor.TutorAgent.respond")
+        mock_respond.return_value.content = "íHola! Vamos a empezar."
+    
+        # ---------------------------------------------------------------------
+        # 2. Ejecutar flujo E2E contra la API
+        # ---------------------------------------------------------------------
+    
+        # A. Solicitar soluci¾n
+        problem_text = "Resuelve 2x = 8"
+>       solve_response = client.post("/solver/solve", json={
+            "problem_text": problem_text
+        })
+
+tests\e2e\test_full_lifecycle.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+venv\Lib\site-packages\starlette\testclient.py:546: in post
+    return super().post(
+venv\Lib\site-packages\httpx\_client.py:1144: in post
+    return self.request(
+venv\Lib\site-packages\starlette\testclient.py:445: in request
+    return super().request(
+venv\Lib\site-packages\httpx\_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\httpx\_client.py:914: in send
+    response = self._send_handling_auth(
+venv\Lib\site-packages\httpx\_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+venv\Lib\site-packages\httpx\_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\httpx\_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\starlette\testclient.py:348: in handle_request
+    raise exc
+venv\Lib\site-packages\starlette\testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+venv\Lib\site-packages\anyio\from_thread.py:334: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python313\Lib\concurrent\futures\_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python313\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+venv\Lib\site-packages\anyio\from_thread.py:259: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\fastapi\applications.py:1139: in __call__
+    await super().__call__(scope, receive, send)
+venv\Lib\site-packages\starlette\applications.py:107: in __call__
+    await self.middleware_stack(scope, receive, send)
+venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+venv\Lib\site-packages\starlette\middleware\cors.py:85: in __call__
+    await self.app(scope, receive, send)
+venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+venv\Lib\site-packages\starlette\routing.py:716: in __call__
+    await self.middleware_stack(scope, receive, send)
+venv\Lib\site-packages\starlette\routing.py:736: in app
+    await route.handle(scope, receive, send)
+venv\Lib\site-packages\starlette\routing.py:290: in handle
+    await self.app(scope, receive, send)
+venv\Lib\site-packages\fastapi\routing.py:119: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+venv\Lib\site-packages\fastapi\routing.py:105: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\fastapi\routing.py:407: in app
+    content = await serialize_response(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    async def serialize_response(
+        *,
+        field: Optional[ModelField] = None,
+        response_content: Any,
+        include: Optional[IncEx] = None,
+        exclude: Optional[IncEx] = None,
+        by_alias: bool = True,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        is_coroutine: bool = True,
+    ) -> Any:
+        if field:
+            errors = []
+            if not hasattr(field, "serialize"):
+                # pydantic v1
+                response_content = _prepare_response_content(
+                    response_content,
+                    exclude_unset=exclude_unset,
+                    exclude_defaults=exclude_defaults,
+                    exclude_none=exclude_none,
+                )
+            if is_coroutine:
+                value, errors_ = field.validate(response_content, {}, loc=("response",))
+            else:
+                value, errors_ = await run_in_threadpool(
+                    field.validate, response_content, {}, loc=("response",)
+                )
+            if isinstance(errors_, list):
+                errors.extend(errors_)
+            elif errors_:
+                errors.append(errors_)
+            if errors:
+>               raise ResponseValidationError(
+                    errors=_normalize_errors(errors), body=response_content
+                )
+E               fastapi.exceptions.ResponseValidationError: 4 validation errors:
+E                 {'type': 'uuid_type', 'loc': ('response', 'problem_id'), 'msg': 'UUID input should be a string, bytes or UUID object', 'input': <AsyncMock name='solve().problem_id' id='2796803731680'>}
+E                 {'type': 'string_type', 'loc': ('response', 'problem_text'), 'msg': 'Input should be a valid string', 'input': <AsyncMock name='solve().problem_text' id='2796803732352'>}
+E                 {'type': 'string_type', 'loc': ('response', 'verification'), 'msg': 'Input should be a valid string', 'input': <AsyncMock name='solve().verification' id='2796803735040'>}
+E                 {'type': 'string_type', 'loc': ('response', 'solver_model'), 'msg': 'Input should be a valid string', 'input': <AsyncMock name='solve().solver_model' id='2796803727984'>}
+
+venv\Lib\site-packages\fastapi\routing.py:248: ResponseValidationError
+---------------------------- Captured stdout call -----------------------------
+{"model": "ollama/qwen2.5:14b", "use_cache": true, "event": "SolverAgent inicializado", "timestamp": "2026-01-20T21:55:35.663856Z", "level": "info"}
+============================== warnings summary ===============================
+tests\e2e\test_full_lifecycle.py:13
+  C:\Users\angarcia\CoTutor\tests\e2e\test_full_lifecycle.py:13: PytestUnknownMarkWarning: Unknown pytest.mark.e2e - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.e2e
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.13.11-final-0 _______________
+
+Name                                        Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------
+src\__init__.py                                 2      0   100%
+src\a2a\__init__.py                             0      0   100%
+src\a2a\client.py                              62     62     0%   7-179
+src\agents\__init__.py                          0      0   100%
+src\agents\solver\__init__.py                   5      0   100%
+src\agents\solver\agent.py                    174    119    32%   71-72, 76-88, 93-97, 101-118, 122, 125, 241-292, 301-375, 382, 399-413, 432-452, 457-467, 484-485, 507-538, 542-545, 554-556
+src\agents\solver\parser.py                   134    108    19%   55-70, 81-118, 122-148, 152-176, 188-205, 222-237, 241-257, 261-274, 278-322, 327-335, 353-364, 376
+src\agents\solver\prompts.py                   19      4    79%   236-246, 263, 285
+src\agents\solver\tools.py                    134    105    22%   107-117, 123-163, 175-181, 219-235, 255-277, 294-313, 396-417, 429-459
+src\agents\tutor\__init__.py                    5      0   100%
+src\agents\tutor\agent.py                     131    102    22%   102-110, 134-141, 158-171, 198-261, 278-284, 310-342, 361-371, 395-401, 430-469, 489-535, 552-562, 566
+src\agents\tutor\prompts.py                    38     18    53%   203-213, 231-250, 273, 294-295, 317-324
+src\agents\tutor\session_manager.py            98     72    27%   73-109, 121, 140-168, 188-202, 222-245, 258-269, 289-311, 326-334, 358-380, 384, 388
+src\agents\tutor\strategies.py                 63     37    41%   83-155, 175-188, 200-208
+src\core\__init__.py                            3      0   100%
+src\core\exceptions.py                        122     61    50%   33-36, 39-41, 45, 66-69, 80-83, 94-97, 108, 119, 135-138, 153-156, 163, 174, 199, 219-225, 236, 256-259, 266-269, 276, 296, 307, 318-321, 337, 357, 371-376
+src\core\types.py                             155     11    93%   98, 102, 106, 167, 171, 245-250
+src\guardrails\__init__.py                      8      8     0%   29-42
+src\guardrails\base.py                         62     62     0%   8-307
+src\guardrails\detectors\__init__.py            4      4     0%   10-15
+src\guardrails\detectors\manipulation.py       99     99     0%   9-387
+src\guardrails\detectors\pedagogical.py       100    100     0%   8-412
+src\guardrails\detectors\solution_leak.py     176    176     0%   8-506
+src\guardrails\filters\__init__.py              3      3     0%   9-13
+src\guardrails\filters\input_filter.py         89     89     0%   8-320
+src\guardrails\filters\response_filter.py     111    111     0%   8-375
+src\guardrails\orchestrator.py                 88     88     0%   8-414
+src\guardrails\patterns.py                     83     83     0%   8-423
+src\models\__init__.py                          6      0   100%
+src\models\base.py                             90     43    52%   90, 118, 128, 138, 162, 181, 190, 199, 218-235, 261-269, 289-295, 298, 325-328, 333, 351, 356, 371-372, 375
+src\models\factory.py                         155     79    49%   100, 107, 117-122, 156-161, 178-186, 214-247, 274-285, 296-297, 302-306, 311, 385-389, 406-420, 429-437, 441-445, 449, 453, 487
+src\models\huggingface_local.py               217    187    14%   92-115, 129-134, 138-226, 234-252, 284-306, 322-390, 400-411, 429-485, 493-498, 502-519, 527-531, 535-536, 564-573, 577-581, 585-600, 612-630, 639-643, 647-648
+src\models\ollama_adapter.py                  211    168    20%   97-99, 136-199, 232-283, 300-346, 365-366, 375-405, 414-432, 441-458, 471, 475-476, 480-487, 516-524, 528-533, 550-590, 600-605
+src\models\openai_local.py                    200    174    13%   88-100, 104-116, 120-122, 157-228, 259-310, 329-369, 383-407, 415-450, 463-481, 485-486, 505-514, 518-528, 536-565, 575-580
+src\prompts\__init__.py                         0      0   100%
+src\prompts\solver_templates\__init__.py        0      0   100%
+src\prompts\tutor_templates\__init__.py         0      0   100%
+src\services\__init__.py                        0      0   100%
+src\services\app.py                            26      6    77%   21-23, 50, 58-59
+src\services\routers\__init__.py                0      0   100%
+src\services\routers\solver.py                 21      2    90%   46-47
+src\services\routers\tutor.py                  39     16    59%   40-42, 51-61, 70-77
+src\utils\__init__.py                           3      0   100%
+src\utils\logging.py                           50     15    70%   61, 79-81, 117-118, 121-122, 125, 143, 168-169, 197, 218-220
+src\utils\metrics.py                          151     90    40%   105-107, 123-125, 141-148, 166-171, 179-180, 188-189, 208-223, 243-261, 265-268, 276-280, 285-296, 308-309, 313-321, 330-341, 348-354, 367-390, 402, 430-432
+-------------------------------------------------------------------------
+TOTAL                                        3137   2302    27%
+=========================== short test summary info ===========================
+FAILED tests/e2e/test_full_lifecycle.py::TestFullLifecycle::test_solve_and_tutor_flow - fastapi.exceptions.ResponseValidationError: 4 validation errors:
+  {'type': 'uuid_type', 'loc': ('response', 'problem_id'), 'msg': 'UUID input should be a string, bytes or UUID object', 'input': <AsyncMock name='solve().problem_id' id='2796803731680'>}
+  {'type': 'string_type', 'loc': ('response', 'problem_text'), 'msg': 'Input should be a valid string', 'input': <AsyncMock name='solve().problem_text' id='2796803732352'>}
+  {'type': 'string_type', 'loc': ('response', 'verification'), 'msg': 'Input should be a valid string', 'input': <AsyncMock name='solve().verification' id='2796803735040'>}
+  {'type': 'string_type', 'loc': ('response', 'solver_model'), 'msg': 'Input should be a valid string', 'input': <AsyncMock name='solve().solver_model' id='2796803727984'>}
+======================== 1 failed, 1 warning in 3.32s =========================

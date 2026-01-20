@@ -84,8 +84,8 @@ class HuggingFaceConfig(BaseModel):
 
 class ModelDefaults(BaseModel):
     """Valores por defecto para modelos."""
-    solver_model: str = "ollama/qwen2.5:14b"
-    tutor_model: str = "ollama/llama3.1:8b"
+    solver_model: str = "ollama/codellama:7b"
+    tutor_model: str = "ollama/llama3.2:latest"
     embedding_model: str = "ollama/nomic-embed-text"
     solver_temperature: float = 0.1
     tutor_temperature: float = 0.7
