@@ -1,0 +1,214 @@
+# =============================================================================
+# AULA AI TUTOR - Configuración de Modelos
+# =============================================================================
+# Este archivo define los modelos disponibles para los agentes del sistema.
+# Cada modelo puede ser usado tanto por el Solver como por el Tutor.
+# =============================================================================
+
+# Configuración por defecto
+defaults:
+  solver_model: "ollama/qwen2.5:14b"
+  tutor_model: "ollama/llama3.1:8b"
+  embedding_model: "ollama/nomic-embed-text"
+  temperature:
+    solver: 0.1      # Bajo para soluciones precisas
+    tutor: 0.7       # Más alto para respuestas variadas
+  max_tokens:
+    solver: 4096
+    tutor: 1024
+
+# =============================================================================
+# OLLAMA - Modelos locales via Ollama
+# =============================================================================
+ollama:
+  base_url: "http://localhost:11434"
+  timeout: 120
+  
+  models:
+    # Modelos recomendados para Solver (razonamiento matemático)
+    qwen2.5:14b:
+      name: "qwen2.5:14b"
+      context_length: 32768
+      recommended_for: ["solver"]
+      vram_required: "12GB"
+      description: "Excelente en matemáticas y razonamiento estructurado"
+      
+    qwen2.5:32b:
+      name: "qwen2.5:32b"
+      context_length: 32768
+      recommended_for: ["solver"]
+      vram_required: "24GB"
+      description: "Máxima calidad en razonamiento matemático"
+      
+    deepseek-r1:14b:
+      name: "deepseek-r1:14b"
+      context_length: 65536
+      recommended_for: ["solver"]
+      vram_required: "12GB"
+      description: "Especializado en razonamiento paso a paso"
+      
+    deepseek-r1:32b:
+      name: "deepseek-r1:32b"
+      context_length: 65536
+      recommended_for: ["solver"]
+      vram_required: "24GB"
+      description: "Versión grande de DeepSeek-R1"
+    
+    # Modelos recomendados para Tutor (diálogo socrático)
+    llama3.1:8b:
+      name: "llama3.1:8b"
+      context_length: 131072
+      recommended_for: ["tutor"]
+      vram_required: "8GB"
+      description: "Buen balance velocidad/calidad para diálogo"
+      
+    llama3.1:70b:
+      name: "llama3.1:70b"
+      context_length: 131072
+      recommended_for: ["tutor", "solver"]
+      vram_required: "48GB"
+      description: "Máxima calidad, requiere mucha VRAM"
+      
+    mistral:7b:
+      name: "mistral:7b"
+      context_length: 32768
+      recommended_for: ["tutor"]
+      vram_required: "6GB"
+      description: "Ligero y rápido, ideal para iteraciones rápidas"
+      
+    mixtral:8x7b:
+      name: "mixtral:8x7b"
+      context_length: 32768
+      recommended_for: ["tutor", "solver"]
+      vram_required: "32GB"
+      description: "MoE, buen balance calidad/velocidad"
+    
+    # Modelos de embedding para guardrails
+    nomic-embed-text:
+      name: "nomic-embed-text"
+      type: "embedding"
+      dimensions: 768
+      description: "Embeddings para detección de similitud"
+      
+    mxbai-embed-large:
+      name: "mxbai-embed-large"
+      type: "embedding"
+      dimensions: 1024
+      description: "Embeddings de alta calidad"
+
+# =============================================================================
+# OPENAI LOCAL - Servidores compatibles con API OpenAI (vLLM, llama.cpp, etc.)
+# =============================================================================
+openai_local:
+  # vLLM server
+  vllm:
+    base_url: "http://localhost:8000/v1"
+    api_key: "not-needed"
+    timeout: 120
+    models:
+      llama-3.1-70b:
+        name: "meta-llama/Llama-3.1-70B-Instruct"
+        context_length: 131072
+        recommended_for: ["solver", "tutor"]
+        
+  # llama.cpp server
+  llamacpp:
+    base_url: "http://localhost:8080/v1"
+    api_key: "not-needed"
+    timeout: 120
+    models:
+      current:
+        name: "loaded-model"
+        context_length: 8192
+        description: "Modelo cargado actualmente en llama.cpp"
+        
+  # LM Studio
+  lmstudio:
+    base_url: "http://localhost:1234/v1"
+    api_key: "lm-studio"
+    timeout: 120
+    models:
+      current:
+        name: "loaded-model"
+        context_length: 8192
+        description: "Modelo cargado actualmente en LM Studio"
+
+# =============================================================================
+# HUGGINGFACE LOCAL - Modelos cargados directamente desde HuggingFace
+# =============================================================================
+huggingface:
+  cache_dir: "~/.cache/huggingface"
+  device_map: "auto"
+  torch_dtype: "bfloat16"
+  load_in_4bit: true
+  
+  models:
+    # Modelos para Solver
+    qwen2.5-14b-instruct:
+      repo_id: "Qwen/Qwen2.5-14B-Instruct"
+      context_length: 32768
+      recommended_for: ["solver"]
+      quantization: "4bit"
+      vram_required: "12GB"
+      
+    qwen2.5-32b-instruct:
+      repo_id: "Qwen/Qwen2.5-32B-Instruct"
+      context_length: 32768
+      recommended_for: ["solver"]
+      quantization: "4bit"
+      vram_required: "24GB"
+    
+    # Modelos para Tutor
+    llama-3.1-8b-instruct:
+      repo_id: "meta-llama/Llama-3.1-8B-Instruct"
+      context_length: 131072
+      recommended_for: ["tutor"]
+      quantization: "4bit"
+      vram_required: "6GB"
+      
+    mistral-7b-instruct:
+      repo_id: "mistralai/Mistral-7B-Instruct-v0.3"
+      context_length: 32768
+      recommended_for: ["tutor"]
+      quantization: "4bit"
+      vram_required: "5GB"
+      
+    # Modelos de embedding
+    bge-large:
+      repo_id: "BAAI/bge-large-en-v1.5"
+      type: "embedding"
+      dimensions: 1024
+      
+    gte-large:
+      repo_id: "thenlper/gte-large"
+      type: "embedding"
+      dimensions: 1024
+
+# =============================================================================
+# Configuración de rendimiento
+# =============================================================================
+performance:
+  # Número máximo de tokens por segundo deseados
+  target_tokens_per_second: 30
+  
+  # Timeout para generación (segundos)
+  generation_timeout: 120
+  
+  # Batch size para procesamiento de embeddings
+  embedding_batch_size: 32
+  
+  # Caché de respuestas del Solver
+  solver_cache:
+    enabled: true
+    max_size: 1000
+    ttl_seconds: 3600
+
+# =============================================================================
+# Configuración de logging
+# =============================================================================
+logging:
+  level: "INFO"
+  format: "json"
+  include_timestamps: true
+  log_model_inputs: false  # Cuidado con privacidad
+  log_model_outputs: false
