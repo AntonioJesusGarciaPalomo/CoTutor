@@ -51,7 +51,7 @@ class LogLevel(str, Enum):
 class OllamaConfig(BaseModel):
     """Configuración para backend Ollama."""
     base_url: str = "http://localhost:11434"
-    timeout: int = 120
+    timeout: int = 300  # Increased for slower hardware
     
     model_config = {"extra": "allow"}
 
@@ -84,13 +84,13 @@ class HuggingFaceConfig(BaseModel):
 
 class ModelDefaults(BaseModel):
     """Valores por defecto para modelos."""
-    solver_model: str = "ollama/codellama:7b"
-    tutor_model: str = "ollama/llama3.2:latest"
+    solver_model: str = "ollama/phi:latest"  # Lightest: 1.6GB
+    tutor_model: str = "ollama/llama3.2:latest"  # 2.0GB
     embedding_model: str = "ollama/nomic-embed-text"
     solver_temperature: float = 0.1
     tutor_temperature: float = 0.7
-    solver_max_tokens: int = 4096
-    tutor_max_tokens: int = 1024
+    solver_max_tokens: int = 1024  # Reduced for faster responses
+    tutor_max_tokens: int = 512
 
 
 class GuardrailsConfig(BaseModel):
