@@ -200,7 +200,7 @@ class SolverAgent:
     @classmethod
     async def create(
         cls,
-        model_id: str = "ollama/qwen2.5:14b",
+        model_id: str = "ollama/qwen2.5:7b",
         **kwargs: Any,
     ) -> "SolverAgent":
         """

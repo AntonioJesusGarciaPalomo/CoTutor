@@ -33,8 +33,8 @@ source venv/bin/activate
 pip install -e ".[dev]"
 
 # Descargar modelos recomendados
-ollama pull qwen2.5:14b   # Para el Solver
-ollama pull llama3.1:8b   # Para el Tutor
+ollama pull qwen2.5:7b    # Para el Solver (buena adherencia a JSON estructurado)
+ollama pull llama3.2       # Para el Tutor
 ```
 
 ## ⚙️ Configuración
@@ -45,7 +45,7 @@ La configuración se gestiona mediante variables de entorno con prefijo `AULA_` 
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
-| `AULA_MODEL_DEFAULTS__SOLVER_MODEL` | `ollama/phi:latest` | Modelo del Solver |
+| `AULA_MODEL_DEFAULTS__SOLVER_MODEL` | `ollama/qwen2.5:7b` | Modelo del Solver |
 | `AULA_MODEL_DEFAULTS__TUTOR_MODEL` | `ollama/llama3.2:latest` | Modelo del Tutor |
 | `AULA_MODEL_DEFAULTS__SOLVER_MAX_TOKENS` | `4096` | Tokens máximos para la respuesta JSON del Solver |
 | `AULA_MODEL_DEFAULTS__TUTOR_MAX_TOKENS` | `1024` | Tokens máximos para respuestas del Tutor |
@@ -68,7 +68,7 @@ El sistema soporta tres backends de modelos:
 
 Los modelos se identifican con el formato `backend/model_name`:
 ```
-ollama/qwen2.5:14b
+ollama/qwen2.5:7b
 openai_local/meta-llama/Llama-3.1-8B
 huggingface/Qwen/Qwen2.5-14B-Instruct
 ```
@@ -82,7 +82,7 @@ from src.agents.solver import SolverAgent
 async def main():
     # Crear el agente (max_tokens y temperature son configurables)
     solver = await SolverAgent.create(
-        "ollama/qwen2.5:14b",
+        "ollama/qwen2.5:7b",
         max_tokens=4096,
         temperature=0.1,
     )

@@ -84,7 +84,7 @@ class HuggingFaceConfig(BaseModel):
 
 class ModelDefaults(BaseModel):
     """Valores por defecto para modelos."""
-    solver_model: str = "ollama/phi:latest"  # Lightest: 1.6GB
+    solver_model: str = "ollama/qwen2.5:7b"  # Best JSON adherence for structured output
     tutor_model: str = "ollama/llama3.2:latest"  # 2.0GB
     embedding_model: str = "ollama/nomic-embed-text"
     solver_temperature: float = 0.1
