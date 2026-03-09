@@ -317,12 +317,13 @@ class SolverAgent:
                     messages.append({"role": "assistant", "content": last_response})
                     messages.append({"role": "user", "content": feedback_prompt})
 
-                # Generar respuesta
+                # Generar respuesta (json_mode fuerza JSON válido en Ollama/vLLM)
                 with metrics.timer("solver_model_call_ms"):
                     response = await self.model.generate(
                         messages,
                         temperature=self.temperature,
                         max_tokens=self.max_tokens,
+                        json_mode=True,
                     )
 
                 last_response = response.content
@@ -420,6 +421,7 @@ class SolverAgent:
                 ],
                 temperature=0.1,
                 max_tokens=self.max_tokens,
+                json_mode=True,
             )
 
         metrics.increment("solver_simplified_attempts")
@@ -577,6 +579,7 @@ Genera exactamente 3 pistas en formato JSON:
             [{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=500,
+            json_mode=True,
         )
         
         try:

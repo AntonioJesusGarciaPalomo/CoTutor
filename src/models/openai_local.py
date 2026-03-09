@@ -167,10 +167,14 @@ class OpenAILocalAdapter(BaseModelAdapter):
             "presence_penalty": presence_penalty,
             "stream": False,
         }
-        
+
+        # Activar JSON mode si se solicita (fuerza JSON válido desde el motor de inferencia)
+        if kwargs.pop("json_mode", False):
+            payload["response_format"] = {"type": "json_object"}
+
         if stop:
             payload["stop"] = stop
-        
+
         # Añadir parámetros adicionales específicos del servidor
         for key, value in kwargs.items():
             if key not in payload:

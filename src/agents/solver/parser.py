@@ -11,6 +11,8 @@ import json
 import re
 from typing import Any
 
+import json_repair
+
 from src.core.exceptions import JSONParsingError, SolutionParsingError
 from src.core.types import (
     DifficultyLevel,
@@ -39,33 +41,59 @@ class SolutionParser:
     def parse(self, raw_response: str, problem_text: str) -> StructuredSolution:
         """
         Parsea una respuesta raw del modelo a StructuredSolution.
-        
+
+        Usa json_repair como primera opción (maneja comillas sin cerrar,
+        brackets faltantes, trailing commas, JSON dentro de markdown, etc.).
+        Si falla, recurre a extracción manual con reparación.
+
         Args:
             raw_response: Respuesta raw del modelo (debería ser JSON).
             problem_text: Texto original del problema.
-            
+
         Returns:
             StructuredSolution parseada y validada.
-            
+
         Raises:
             JSONParsingError: Si el JSON no es válido.
             SolutionParsingError: Si faltan campos requeridos.
         """
-        # Extraer JSON del response
-        json_str = self._extract_json(raw_response)
-        
-        # Parsear JSON
+        data = None
+
+        # Intento 1: json_repair (maneja la mayoría de casos de JSON roto)
         try:
-            data = json.loads(json_str)
-        except json.JSONDecodeError as e:
+            repaired = json_repair.loads(raw_response)
+            if isinstance(repaired, dict):
+                data = repaired
+        except Exception:
+            pass
+
+        # Intento 2: Extracción manual + json.loads
+        if data is None:
+            try:
+                json_str = self._extract_json(raw_response)
+                data = json.loads(json_str)
+            except (json.JSONDecodeError, JSONParsingError):
+                pass
+
+        # Intento 3: Extracción manual + json_repair
+        if data is None:
+            try:
+                json_str = self._extract_json(raw_response)
+                repaired = json_repair.loads(json_str)
+                if isinstance(repaired, dict):
+                    data = repaired
+            except Exception:
+                pass
+
+        if data is None or not isinstance(data, dict):
             raise JSONParsingError(
                 raw_response[:200],
-                str(e),
-            ) from e
-        
+                "No se pudo parsear JSON válido de la respuesta del modelo",
+            )
+
         # Validar campos requeridos
         self._validate_required_fields(data)
-        
+
         # Construir StructuredSolution
         return self._build_solution(data, problem_text)
     
