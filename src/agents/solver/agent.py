@@ -300,7 +300,7 @@ class SolverAgent:
         """Genera solución con reintentos en caso de error."""
         last_error: Exception | None = None
         last_response: str = ""
-        
+
         for attempt in range(self.max_retries):
             try:
                 # Construir mensajes
@@ -308,7 +308,7 @@ class SolverAgent:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ]
-                
+
                 # Si tenemos un error previo, añadir feedback
                 if last_error and last_response:
                     feedback_prompt = self._create_feedback_prompt(
@@ -316,7 +316,7 @@ class SolverAgent:
                     )
                     messages.append({"role": "assistant", "content": last_response})
                     messages.append({"role": "user", "content": feedback_prompt})
-                
+
                 # Generar respuesta
                 with metrics.timer("solver_model_call_ms"):
                     response = await self.model.generate(
@@ -324,17 +324,17 @@ class SolverAgent:
                         temperature=self.temperature,
                         max_tokens=self.max_tokens,
                     )
-                
+
                 last_response = response.content
-                
+
                 # Parsear solución
                 solution = self.parser.parse(response.content, problem_text)
-                
+
                 # Validar calidad de la solución
                 self._validate_solution_quality(solution)
-                
+
                 return solution
-                
+
             except (SolutionParsingError, ValueError) as e:
                 last_error = e
                 logger.warning(
@@ -343,7 +343,7 @@ class SolverAgent:
                     error=str(e),
                 )
                 metrics.increment("solver_parse_errors")
-                
+
             except ModelGenerationError as e:
                 last_error = e
                 logger.warning(
@@ -352,18 +352,34 @@ class SolverAgent:
                     error=str(e),
                 )
                 metrics.increment("solver_generation_errors")
-                
+
                 # Esperar antes de reintentar
                 await asyncio.sleep(1.0 * (attempt + 1))
-        
-        # Todos los reintentos fallaron
+
+        # Reintentos normales fallaron: intentar con prompt simplificado
+        logger.warning(
+            "Reintentos normales agotados, intentando con prompt simplificado",
+            max_retries=self.max_retries,
+        )
+
+        try:
+            solution = await self._generate_with_simplified_prompt(
+                problem_text, user_prompt
+            )
+            return solution
+        except Exception as simplified_error:
+            logger.warning(
+                "Prompt simplificado también falló",
+                error=str(simplified_error),
+            )
+
+        # Último recurso: crear solución mínima a partir de la última respuesta
         logger.error(
-            "Fallo al resolver problema después de reintentos",
+            "Fallo al resolver problema después de todos los intentos",
             max_retries=self.max_retries,
             last_error=str(last_error),
         )
-        
-        # Intentar crear una solución mínima
+
         if last_response:
             try:
                 return SolutionRepairStrategy.create_minimal_solution(
@@ -371,11 +387,45 @@ class SolverAgent:
                 )
             except Exception:
                 pass
-        
+
         raise SolverError(
             f"No se pudo generar solución después de {self.max_retries} intentos: {last_error}",
             problem_preview=problem_text[:200],
         )
+
+    async def _generate_with_simplified_prompt(
+        self,
+        problem_text: str,
+        original_user_prompt: str,
+    ) -> StructuredSolution:
+        """
+        Genera solución usando un prompt mucho más simple que modelos
+        pequeños pueden completar de forma fiable.
+        """
+        simplified_system = (
+            "Eres un solucionador de problemas. Responde SOLO con JSON válido. "
+            "No escribas nada antes ni después del JSON."
+        )
+        simplified_user = f"""Resuelve este problema y responde con este JSON exacto (rellena los valores):
+
+{problem_text}
+
+{{"problem_type":"general","difficulty":"intermedio","solution":{{"steps":[{{"step_number":1,"description":"PASO 1 AQUÍ"}},{{"step_number":2,"description":"PASO 2 AQUÍ"}}]}},"final_answer":"RESPUESTA AQUÍ","hints":[{{"level":1,"content":"PISTA SUTIL"}},{{"level":2,"content":"PISTA MODERADA"}},{{"level":3,"content":"PISTA DIRECTA"}}]}}"""
+
+        with metrics.timer("solver_simplified_call_ms"):
+            response = await self.model.generate(
+                [
+                    {"role": "system", "content": simplified_system},
+                    {"role": "user", "content": simplified_user},
+                ],
+                temperature=0.1,
+                max_tokens=self.max_tokens,
+            )
+
+        metrics.increment("solver_simplified_attempts")
+        solution = self.parser.parse(response.content, problem_text)
+        self._validate_solution_quality(solution)
+        return solution
     
     def _create_feedback_prompt(self, last_response: str, error: str) -> str:
         """Crea un prompt de feedback para corregir errores."""
