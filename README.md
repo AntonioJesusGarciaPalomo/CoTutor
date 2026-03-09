@@ -9,16 +9,16 @@ Aula AI Tutor es un sistema multi-agente diseñado para proporcionar tutoría ed
 ### Arquitectura de Dos Agentes
 
 ```
-┌─────────────────┐     A2A Protocol     ┌─────────────────┐
+┌─────────────────┐     A2A Protocol    ┌─────────────────┐
 │   Agente        │◄───────────────────►│   Agente        │
-│   Solucionador  │                      │   Tutor         │
-│   ✅ COMPLETO   │    Solución         │   (Fase 5)      │
+│   Solucionador  │                     │   Tutor         │
+│    COMPLETO     │    Solución         │   (Fase 5)      │
 │                 │    Estructurada     │                 │
 │ • Resuelve el   │ ─────────────────►  │ • Guía al       │
-│   problema      │                      │   estudiante    │
-│ • Genera pasos  │                      │ • Usa método    │
-│ • Crea pistas   │                      │   socrático    │
-└─────────────────┘                      └─────────────────┘
+│   problema      │                     │   estudiante    │
+│ • Genera pasos  │                     │ • Usa método    │
+│ • Crea pistas   │                     │   socrático     │
+└─────────────────┘                     └─────────────────┘
 ```
 
 ## 🚀 Instalación
