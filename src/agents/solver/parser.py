@@ -11,6 +11,8 @@ import json
 import re
 from typing import Any
 
+import json_repair
+
 from src.core.exceptions import JSONParsingError, SolutionParsingError
 from src.core.types import (
     DifficultyLevel,
@@ -39,52 +41,80 @@ class SolutionParser:
     def parse(self, raw_response: str, problem_text: str) -> StructuredSolution:
         """
         Parsea una respuesta raw del modelo a StructuredSolution.
-        
+
+        Usa json_repair como primera opción (maneja comillas sin cerrar,
+        brackets faltantes, trailing commas, JSON dentro de markdown, etc.).
+        Si falla, recurre a extracción manual con reparación.
+
         Args:
             raw_response: Respuesta raw del modelo (debería ser JSON).
             problem_text: Texto original del problema.
-            
+
         Returns:
             StructuredSolution parseada y validada.
-            
+
         Raises:
             JSONParsingError: Si el JSON no es válido.
             SolutionParsingError: Si faltan campos requeridos.
         """
-        # Extraer JSON del response
-        json_str = self._extract_json(raw_response)
-        
-        # Parsear JSON
+        data = None
+
+        # Intento 1: json_repair (maneja la mayoría de casos de JSON roto)
         try:
-            data = json.loads(json_str)
-        except json.JSONDecodeError as e:
+            repaired = json_repair.loads(raw_response)
+            if isinstance(repaired, dict):
+                data = repaired
+        except Exception:
+            pass
+
+        # Intento 2: Extracción manual + json.loads
+        if data is None:
+            try:
+                json_str = self._extract_json(raw_response)
+                data = json.loads(json_str)
+            except (json.JSONDecodeError, JSONParsingError):
+                pass
+
+        # Intento 3: Extracción manual + json_repair
+        if data is None:
+            try:
+                json_str = self._extract_json(raw_response)
+                repaired = json_repair.loads(json_str)
+                if isinstance(repaired, dict):
+                    data = repaired
+            except Exception:
+                pass
+
+        if data is None or not isinstance(data, dict):
             raise JSONParsingError(
                 raw_response[:200],
-                str(e),
-            ) from e
-        
+                "No se pudo parsear JSON válido de la respuesta del modelo",
+            )
+
         # Validar campos requeridos
         self._validate_required_fields(data)
-        
+
         # Construir StructuredSolution
         return self._build_solution(data, problem_text)
     
     def _extract_json(self, response: str) -> str:
         """
         Extrae JSON de una respuesta que puede contener texto adicional.
-        
+
         Maneja casos como:
         - JSON puro
         - JSON en bloques de código markdown
         - JSON con texto antes/después
+        - JSON truncado por límite de tokens
         """
         response = response.strip()
-        
+
         # Caso 1: Ya es JSON válido
         if response.startswith("{"):
-            # Buscar el cierre del JSON
-            return self._find_json_object(response)
-        
+            result = self._find_json_object(response)
+            if self._try_parse_json(result):
+                return result
+
         # Caso 2: JSON en bloque de código markdown
         code_block_pattern = r'```(?:json)?\s*\n?(.*?)\n?```'
         matches = re.findall(code_block_pattern, response, re.DOTALL)
@@ -92,30 +122,141 @@ class SolutionParser:
             for match in matches:
                 if match.strip().startswith("{"):
                     return match.strip()
-        
+
         # Caso 3: Buscar JSON en cualquier parte del texto
         json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
         matches = re.findall(json_pattern, response, re.DOTALL)
-        
+
         # Buscar el JSON más grande (probablemente el correcto)
         if matches:
-            return max(matches, key=len)
-        
-        # Caso 4: Intentar encontrar JSON incompleto y completarlo
+            largest = max(matches, key=len)
+            if self._try_parse_json(largest):
+                return largest
+
+        # Caso 4: Intentar encontrar JSON incompleto y repararlo
         if "{" in response:
             start_idx = response.index("{")
             partial_json = response[start_idx:]
-            
-            # Contar llaves para detectar JSON incompleto
-            open_braces = partial_json.count("{")
-            close_braces = partial_json.count("}")
-            
-            if open_braces > close_braces:
-                # Añadir llaves de cierre faltantes
-                partial_json += "}" * (open_braces - close_braces)
-                return partial_json
-        
+            repaired = self._repair_truncated_json(partial_json)
+            if repaired:
+                return repaired
+
         raise JSONParsingError(response[:200], "No se encontró JSON válido en la respuesta")
+
+    def _try_parse_json(self, text: str) -> bool:
+        """Intenta parsear JSON, retorna True si es válido."""
+        try:
+            json.loads(text)
+            return True
+        except (json.JSONDecodeError, ValueError):
+            return False
+
+    def _repair_truncated_json(self, partial: str) -> str | None:
+        """
+        Repara JSON truncado por límite de tokens del modelo.
+
+        Maneja casos como:
+        - JSON cortado a mitad de un string value
+        - JSON cortado a mitad de un array
+        - JSON cortado a mitad de un objeto
+        - Trailing commas
+        """
+        text = partial.rstrip()
+
+        # Eliminar trailing commas
+        text = re.sub(r',\s*$', '', text)
+
+        # Si está cortado a mitad de un string, cerrar el string
+        # Contar comillas no escapadas
+        in_string = False
+        escape_next = False
+        open_brackets = []
+
+        for i, char in enumerate(text):
+            if escape_next:
+                escape_next = False
+                continue
+            if char == '\\':
+                escape_next = True
+                continue
+            if char == '"':
+                in_string = not in_string
+                continue
+            if not in_string:
+                if char in '{[':
+                    open_brackets.append(char)
+                elif char == '}' and open_brackets and open_brackets[-1] == '{':
+                    open_brackets.pop()
+                elif char == ']' and open_brackets and open_brackets[-1] == '[':
+                    open_brackets.pop()
+
+        # Si estamos dentro de un string, cerrarlo
+        if in_string:
+            text += '"'
+
+        # Eliminar trailing commas después de cerrar strings
+        text = re.sub(r',\s*$', '', text)
+
+        # Cerrar brackets/braces abiertos en orden inverso
+        for bracket in reversed(open_brackets):
+            if bracket == '{':
+                text += '}'
+            elif bracket == '[':
+                text += ']'
+
+        # Intentar parsear
+        if self._try_parse_json(text):
+            return text
+
+        # Intento más agresivo: buscar el último campo completo y truncar ahí
+        aggressive = self._aggressive_json_repair(partial)
+        if aggressive and self._try_parse_json(aggressive):
+            return aggressive
+
+        return None
+
+    def _aggressive_json_repair(self, partial: str) -> str | None:
+        """
+        Reparación agresiva: busca el último campo JSON completo
+        y trunca el resto.
+        """
+        # Buscar la última aparición de un valor completo seguido de coma o cierre
+        # Patrones de "campo completo": "key": "value", o "key": number, o "key": bool,
+        patterns = [
+            # Último campo string completo
+            r'(.*"[^"]*"\s*:\s*"[^"]*")\s*[,}\]]',
+            # Último campo numérico completo
+            r'(.*"[^"]*"\s*:\s*-?\d+\.?\d*)\s*[,}\]]',
+            # Último campo booleano completo
+            r'(.*"[^"]*"\s*:\s*(?:true|false))\s*[,}\]]',
+            # Último cierre de array completo
+            r'(.*\])\s*[,}\]]',
+            # Último cierre de objeto completo
+            r'(.*\})\s*[,}\]]',
+        ]
+
+        best_match = None
+        best_len = 0
+
+        for pattern in patterns:
+            match = re.search(pattern, partial, re.DOTALL)
+            if match and len(match.group(1)) > best_len:
+                best_match = match.group(1)
+                best_len = len(best_match)
+
+        if not best_match:
+            return None
+
+        text = best_match.rstrip().rstrip(',')
+
+        # Contar y cerrar brackets abiertos
+        open_count = text.count('{') - text.count('}')
+        open_array = text.count('[') - text.count(']')
+
+        text += ']' * max(0, open_array)
+        text += '}' * max(0, open_count)
+
+        return text
     
     def _find_json_object(self, text: str) -> str:
         """Encuentra un objeto JSON completo al inicio del texto."""

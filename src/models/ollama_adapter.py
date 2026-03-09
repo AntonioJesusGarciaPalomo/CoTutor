@@ -153,7 +153,11 @@ class OllamaAdapter(BaseModelAdapter):
                 "num_predict": max_tokens,
             },
         }
-        
+
+        # Activar JSON mode si se solicita (fuerza JSON válido desde el motor de inferencia)
+        if kwargs.pop("json_mode", False):
+            payload["format"] = "json"
+
         if stop:
             payload["options"]["stop"] = stop
         

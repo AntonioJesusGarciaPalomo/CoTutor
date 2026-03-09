@@ -23,8 +23,11 @@ class SolveRequest(BaseModel):
 
 async def get_solver_agent():
     """Dependencia para obtener una instancia del Solver."""
-    # En producción esto podría ser un singleton manejado de otra forma
-    return await SolverAgent.create(settings.model_defaults.solver_model)
+    return await SolverAgent.create(
+        settings.model_defaults.solver_model,
+        max_tokens=settings.model_defaults.solver_max_tokens,
+        temperature=settings.model_defaults.solver_temperature,
+    )
 
 
 @router.post("/solve", response_model=StructuredSolution)

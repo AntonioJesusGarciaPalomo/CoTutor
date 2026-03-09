@@ -89,8 +89,8 @@ class ModelDefaults(BaseModel):
     embedding_model: str = "ollama/nomic-embed-text"
     solver_temperature: float = 0.1
     tutor_temperature: float = 0.7
-    solver_max_tokens: int = 1024  # Reduced for faster responses
-    tutor_max_tokens: int = 512
+    solver_max_tokens: int = 4096  # Needs to be large enough for full JSON schema
+    tutor_max_tokens: int = 1024
 
 
 class GuardrailsConfig(BaseModel):

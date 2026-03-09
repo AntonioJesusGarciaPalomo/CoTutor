@@ -38,7 +38,11 @@ async def get_tutor_agent() -> TutorAgent:
     """Obtiene o crea el agente Tutor singleton."""
     global _tutor_agent
     if _tutor_agent is None:
-        _tutor_agent = await TutorAgent.create(settings.model_defaults.tutor_model)
+        _tutor_agent = await TutorAgent.create(
+            settings.model_defaults.tutor_model,
+            max_tokens=settings.model_defaults.tutor_max_tokens,
+            temperature=settings.model_defaults.tutor_temperature,
+        )
     return _tutor_agent
 
 
